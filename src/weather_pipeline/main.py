@@ -1,6 +1,8 @@
-from weather_pipeline.extract import extract_weather_data
-from weather_pipeline.transform import transform_weather_data
-from weather_pipeline.load import save_weather_data
+import requests
+
+from src.weather_pipeline.extract import extract_weather_data
+from src.weather_pipeline.transform import transform_weather_data
+from src.weather_pipeline.load import save_weather_data
 
 CITIES = [
     {"name": "Warsaw", "latitude": 52.2297, "longitude": 21.0122},
@@ -11,7 +13,12 @@ CITIES = [
 def main() -> None:
     weather_results = []
     for city in CITIES:
-        raw_data = extract_weather_data(city)
+        try:
+            raw_data = extract_weather_data(city)
+        except requests.RequestException as error:
+            print(f"Failed to fetch weather data for {city['name']}: {error}")
+            continue
+
         tranformed_data = transform_weather_data(city, raw_data)
         weather_results.append(tranformed_data)
 
