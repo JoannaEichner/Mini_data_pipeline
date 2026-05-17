@@ -1,0 +1,20 @@
+[
+    {
+        "city": "Warsaw",
+        "temperature": 9.0,
+        "windspeed": 15.8,
+        "time": "2026-05-17T13:15"
+    },
+    {
+        "city": "Krakow",
+        "temperature": 9.7,
+        "windspeed": 7.2,
+        "time": "2026-05-17T13:15"
+    },
+    {
+        "city": "Gdansk",
+        "temperature": 13.8,
+        "windspeed": 13.4,
+        "time": "2026-05-17T13:15"
+    }
+]
