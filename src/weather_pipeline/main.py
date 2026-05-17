@@ -16,8 +16,9 @@ def main() -> None:
         weather_results.append(tranformed_data)
 
         save_weather_data(weather_results, "data/weather_data.json")
-
-
+        print("Weather data saved to data/weather_data.json")
 
 if __name__ == "__main__":
     main()
+
+    
