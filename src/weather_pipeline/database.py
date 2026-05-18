@@ -55,3 +55,5 @@ def insert_weather_data(conn: connection, data: list[dict[str, Any]]) -> None:
                     record["time"],
                 ),
             )
+
+    conn.commit()
