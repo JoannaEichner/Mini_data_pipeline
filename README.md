@@ -1,10 +1,10 @@
 # Mini Data Pipeline
 
-A simple Python ETL pipeline that fetches current weather data from the Open-Meteo API, transforms the response, and saves the output to JSON and CSV files.
+A simple Python ETL pipeline that fetches current weather data from the Open-Meteo API, transforms the response, and saves the output to JSON, CSV, and PostgreSQL.
 
 ## Project goal
 
-The goal of this project is to practice building a small data pipeline in Python using a clean project structure, modular code, tests, and basic code quality tools.
+The goal of this project is to practice building a small data pipeline in Python using a clean project structure, modular code, tests, a PostgreSQL database, and basic code quality tools.
 
 The pipeline follows a simple ETL process:
 
@@ -19,7 +19,11 @@ Extract → Transform → Load
 - Transforms raw API responses into a clean data format
 - Saves results to JSON
 - Saves results to CSV
+- Saves results to PostgreSQL
+- Creates the PostgreSQL table automatically if it does not exist
+- Prevents duplicate records using a unique constraint on city and measurement time
 - Includes unit tests
+- Uses mocking for API and database-related tests
 - Uses Ruff for code quality checks
 - Handles API request errors without stopping the whole pipeline
 
@@ -30,19 +34,20 @@ Mini_data_pipeline/
 ├── config/
 │   └── cities.json
 ├── data/
-│   ├── weather_data.json
-│   └── weather_data.csv
+│   └── generated output files
 ├── src/
 │   ├── __init__.py
 │   └── weather_pipeline/
 │       ├── __init__.py
 │       ├── config.py
+│       ├── database.py
 │       ├── extract.py
 │       ├── transform.py
 │       ├── load.py
 │       └── main.py
 ├── tests/
 │   ├── test_config.py
+│   ├── test_database.py
 │   ├── test_extract.py
 │   ├── test_load.py
 │   └── test_transform.py
@@ -91,6 +96,57 @@ The transformed data is saved to:
 ```text
 data/weather_data.json
 data/weather_data.csv
+PostgreSQL table: weather_measurements
+```
+
+## PostgreSQL output
+
+The pipeline saves transformed weather data to a PostgreSQL database.
+
+### Database table
+
+The pipeline creates a table named:
+
+```sql
+weather_measurements
+```
+
+Table schema:
+
+```sql
+CREATE TABLE IF NOT EXISTS weather_measurements (
+    id SERIAL PRIMARY KEY,
+    city TEXT NOT NULL,
+    temperature DOUBLE PRECISION NOT NULL,
+    windspeed DOUBLE PRECISION NOT NULL,
+    measurement_time TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (city, measurement_time)
+);
+```
+
+The unique constraint prevents inserting duplicate records for the same city and measurement time.
+
+### Environment variables
+
+Create a `.env` file in the main project directory:
+
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=weather_pipeline_db
+DB_USER=postgres
+DB_PASSWORD=your_password
+```
+
+The `.env` file is ignored by Git and should not be committed.
+
+### Create local database
+
+Before running the pipeline, create a local PostgreSQL database:
+
+```sql
+CREATE DATABASE weather_pipeline_db;
 ```
 
 ## Requirements
@@ -99,6 +155,8 @@ data/weather_data.csv
 - requests
 - pytest
 - ruff
+- psycopg2-binary
+- python-dotenv
 
 ## Installation
 
@@ -123,7 +181,11 @@ From the main project directory, run:
 python -m src.weather_pipeline.main
 ```
 
-After running the pipeline, output files will be created in the `data/` directory.
+After running the pipeline, output data will be saved to:
+
+- `data/weather_data.json`
+- `data/weather_data.csv`
+- PostgreSQL table `weather_measurements`
 
 ## How to run tests
 
@@ -135,6 +197,7 @@ Expected result:
 
 ```text
 tests/test_config.py .
+tests/test_database.py ...
 tests/test_extract.py .
 tests/test_load.py ..
 tests/test_transform.py ..
@@ -174,6 +237,13 @@ city,temperature,windspeed,time
 Warsaw,20.5,7.2,2026-05-17T12:00
 ```
 
+PostgreSQL output example:
+
+```text
+id | city   | temperature | windspeed | measurement_time     | created_at
+1  | Warsaw | 20.5        | 7.2       | 2026-05-17 12:00:00  | 2026-05-17 12:01:00
+```
+
 ## Tests
 
 The project includes tests for:
@@ -183,12 +253,17 @@ The project includes tests for:
 - transforming raw weather data
 - saving data to JSON
 - saving data to CSV
+- creating the PostgreSQL table
+- inserting weather records into PostgreSQL
+- saving data to the database using mocked database functions
 
-The API test uses mocking, so tests do not depend on an internet connection.
+The API and database tests use mocking, so unit tests do not depend on an internet connection or a live database.
 
 ## Notes
 
 Generated output files in the `data/` directory should not be committed to the repository.
+
+The `.env` file contains local database credentials and should not be committed.
 
 Recommended `.gitignore` entries:
 
@@ -205,8 +280,9 @@ data/*.csv
 
 Planned improvements:
 
-- save weather data to PostgreSQL
 - add Docker support
 - add pipeline orchestration with Prefect or Airflow
 - add logging
 - add environment-based configuration
+- add database migrations
+- add integration tests for PostgreSQL
