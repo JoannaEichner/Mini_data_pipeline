@@ -57,3 +57,9 @@ def insert_weather_data(conn: connection, data: list[dict[str, Any]]) -> None:
             )
 
     conn.commit()
+
+
+def save_weather_data_to_database(data: list[dict[str, Any]]) -> None:
+    with get_db_connection() as conn:
+        create_weather_table(conn)
+        insert_weather_data(conn, data)
