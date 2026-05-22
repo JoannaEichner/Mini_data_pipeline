@@ -4,7 +4,7 @@ A simple Python ETL pipeline that fetches current weather data from the Open-Met
 
 ## Project goal
 
-The goal of this project is to practice building a small data pipeline in Python using a clean project structure, modular code, tests, a PostgreSQL database, and basic code quality tools.
+The goal of this project is to practice building a small data pipeline in Python using a clean project structure, modular code, tests, PostgreSQL, Docker Compose, and basic code quality tools.
 
 The pipeline follows a simple ETL process:
 
@@ -20,6 +20,7 @@ Extract → Transform → Load
 - Saves results to JSON
 - Saves results to CSV
 - Saves results to PostgreSQL
+- Runs PostgreSQL in a Docker container using Docker Compose
 - Creates the PostgreSQL table automatically if it does not exist
 - Prevents duplicate records using a unique constraint on city and measurement time
 - Includes unit tests
@@ -51,7 +52,9 @@ Mini_data_pipeline/
 │   ├── test_extract.py
 │   ├── test_load.py
 │   └── test_transform.py
+├── .env.example
 ├── .gitignore
+├── docker-compose.yml
 ├── README.md
 └── requirements.txt
 ```
@@ -127,31 +130,91 @@ CREATE TABLE IF NOT EXISTS weather_measurements (
 
 The unique constraint prevents inserting duplicate records for the same city and measurement time.
 
-### Environment variables
+## Docker Compose
 
-Create a `.env` file in the main project directory:
+The project includes a `docker-compose.yml` file that runs PostgreSQL in a Docker container.
+
+### Start PostgreSQL with Docker
+
+```powershell
+docker compose up -d
+```
+
+This starts a PostgreSQL container named:
+
+```text
+weather_pipeline_postgres
+```
+
+The database is available on:
+
+```text
+localhost:5433
+```
+
+Inside the container, PostgreSQL runs on port `5432`, but it is exposed to the host machine as `5433`.
+
+### Check running containers
+
+```powershell
+docker ps
+```
+
+### Connect to PostgreSQL inside the container
+
+```powershell
+docker exec -it weather_pipeline_postgres psql -U postgres -d weather_pipeline_db
+```
+
+Inside `psql`, you can check existing tables:
+
+```sql
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public';
+```
+
+You can check saved weather data with:
+
+```sql
+SELECT *
+FROM weather_measurements;
+```
+
+To exit `psql`:
+
+```sql
+\q
+```
+
+### Stop the container
+
+```powershell
+docker compose down
+```
+
+## Environment variables
+
+Create a `.env` file in the main project directory.
+
+When using Docker Compose, use:
 
 ```env
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=5433
 DB_NAME=weather_pipeline_db
 DB_USER=postgres
-DB_PASSWORD=your_password
+DB_PASSWORD=postgres
 ```
 
 The `.env` file is ignored by Git and should not be committed.
 
-### Create local database
-
-Before running the pipeline, create a local PostgreSQL database:
-
-```sql
-CREATE DATABASE weather_pipeline_db;
-```
+The repository includes `.env.example` as a safe example configuration file.
 
 ## Requirements
 
 - Python 3.13+
+- Docker Desktop
 - requests
 - pytest
 - ruff
@@ -167,7 +230,7 @@ python -m venv .venv
 .venv\Scripts\activate
 ```
 
-Install dependencies:
+Install Python dependencies:
 
 ```powershell
 pip install -r requirements.txt
@@ -175,7 +238,13 @@ pip install -r requirements.txt
 
 ## How to run the pipeline
 
-From the main project directory, run:
+Start PostgreSQL first:
+
+```powershell
+docker compose up -d
+```
+
+Then run the pipeline from the main project directory:
 
 ```powershell
 python -m src.weather_pipeline.main
@@ -276,11 +345,48 @@ data/*.csv
 .env
 ```
 
+## Useful commands
+
+Start PostgreSQL:
+
+```powershell
+docker compose up -d
+```
+
+Stop PostgreSQL:
+
+```powershell
+docker compose down
+```
+
+Run pipeline:
+
+```powershell
+python -m src.weather_pipeline.main
+```
+
+Run tests:
+
+```powershell
+python -m pytest
+```
+
+Run Ruff:
+
+```powershell
+python -m ruff check .
+```
+
+Connect to PostgreSQL container:
+
+```powershell
+docker exec -it weather_pipeline_postgres psql -U postgres -d weather_pipeline_db
+```
+
 ## Next steps
 
 Planned improvements:
 
-- add Docker support
 - add pipeline orchestration with Prefect or Airflow
 - add logging
 - add environment-based configuration
